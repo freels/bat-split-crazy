@@ -46,47 +46,51 @@ you can also create reports:
     define_variate_test :alt_layout do |t|
       # snip...
 
-      # for simple reports, supply a conforming 
-      # AR connection.select_all result and you're done.
       t.report do |test, report|
-        report.columns :clicks, :unique_users
-
-        report.with_sql_results User.connection.select_all("
-          select user_id % 10 as 'bucket', \
-          count(*) as 'clicks', \
-          count(distict user_id) as 'unique_users' \
-          from click_events where created_at > '#{test.start_date.to_s :db}' \
-          group by user_id % 10
-        ")
+        # define report here...
       end
+    end
 
-      # alternatively you can dig in:
-      t.report do |test, report|
-        report.columns :clicks, :logins
+for simple reports, supply a conforming AR connection.select_all result and you're done:
+
+    t.report do |test, report|
+      report.columns :clicks, :unique_users
+
+      report.with_sql_results User.connection.select_all("
+        select user_id % 10 as 'bucket', \
+        count(*) as 'clicks', \
+        count(distict user_id) as 'unique_users' \
+        from click_events where created_at > '#{test.start_date.to_s :db}' \
+        group by user_id % 10
+      ")
+    end
+
+alternatively you can dig in:
+
+    t.report do |test, report|
+      report.columns :clicks, :logins
+      
+      click_results = User.connection.select_all("
+        select user_id % 10 as 'bucket', count(*) as 'clicks' from click_events \
+        where created_at > '#{test.start_date.to_s :db}' group by user_id % 10
+      ")
+
+      login_results = User.connection.select_all("
+        select user_id % 10 as 'bucket', count(*) as 'logins' from login_events \
+        where created_at > '#{test.start_date.to_s :db}' group by user_id % 10
+      ")
+
+      test.buckets.each do |name, vals| # name is a name defined earlier with t.groups
+                                        # vals is an array for which the modulo function
+                                        # returns name
+        clicks = click_results.find{|r| vals.include? r['bucket'].to_i }['clicks']
+        logins = login_results.find{|r| vals.include? r['bucket'].to_i }['logins']
         
-        click_results = User.connection.select_all("
-          select user_id % 10 as 'bucket', count(*) as 'clicks' from click_events \
-          where created_at > '#{test.start_date.to_s :db}' group by user_id % 10
-        ")
-
-        login_results = User.connection.select_all("
-          select user_id % 10 as 'bucket', count(*) as 'logins' from login_events \
-          where created_at > '#{test.start_date.to_s :db}' group by user_id % 10
-        ")
-
-        test.buckets.each do |name, vals| # name is a name defined earlier with t.groups
-                                          # vals is an array for which the modulo function
-                                          # returns name
-          clicks = click_results.find{|r| vals.include? r['bucket'].to_i }['clicks']
-          logins = login_results.find{|r| vals.include? r['bucket'].to_i }['logins']
-          
-          report.row name, clicks, logins # data order is the same as defined earlier with
-                                          # report.columns. 
-          # alternatively pass a hash:
-          # report.row name, :clicks => clicks, :logins => logins
-        end
+        report.row name, clicks, logins # data order is the same as defined earlier with
+                                        # report.columns. 
+        # alternatively pass a hash:
+        # report.row name, :clicks => clicks, :logins => logins
       end
-    end 
-
+    end
 
 Copyright (c) 2009 Serious Business, released under the MIT license
