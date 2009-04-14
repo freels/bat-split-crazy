@@ -1,5 +1,11 @@
 module BatSplitCrazy
   class ReportTable
+    attr_accessor :test
+
+    def initialize(test)
+      self.test = test
+    end
+
     def columns(*cols)
       @columns = Array(cols.flatten).map(&:to_s) if cols.length > 0
       @columns
@@ -38,6 +44,23 @@ module BatSplitCrazy
       else
         rows.each(&block)
       end
+    end
+
+    def with_sql_results(sql_query_results)
+      sql_columns = self.columns || sql_query_results.first.keys.reject{|k| k.to_s == 'bucket'}
+
+      sql_query_results.each do |r|
+        name = test.group_for_bucket r['bucket'].to_i
+        
+        col_data = {}
+        sql_columns.each {|col| col_data[col] = r[col.to_s] }
+        
+        row name, col_data
+      end
+    end
+
+    def start_date
+      self.test.start_date
     end
 
     def to_html

@@ -1,13 +1,20 @@
-BatSplitCrazy
-=============
+# BatSplitCrazy
 
-Introduction goes here.
+by Matt Freels
+
+A/B tests are awesome. Setting them up and keeping track of the results is not so awesome.
+
+# Usage
+
+in your models:
+
+    define_variate_test :alt_layout do |t|
+      t.start_date '2009-03-31 12:00'
+      t.groups :control, :alt_layout
+    end
+
+in where you want to use the test, say in a view:
+    
 
 
-Example
-=======
-
-Example goes here.
-
-
-Copyright (c) 2009 [name of plugin creator], released under the MIT license
+Copyright (c) 2009 Serious Business, released under the MIT license
